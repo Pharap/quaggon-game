@@ -14,95 +14,126 @@
 #define quaggonLeft 3
 #define quaggonRight 4*/
 
-enum class quaggonDirection : uint8_t {Up, Down, Left, Right};
+enum class QuaggonDirection : uint8_t {Up, Down, Left, Right};
 
-quaggonDirection qDir = quaggonDirection::Down;
+QuaggonDirection quaggonDirection = QuaggonDirection::Down;
 
-bool quaggonMoving = false;
+constexpr uint8_t quaggonFirstStep = 0;
+constexpr uint8_t quaggonLastStep = 15;
 
-uint8_t quaggonFrame = 0;
+uint8_t quaggonStep = 0;
 //int quaggonState = quaggonIddle;
 
-void WalkingAnim(){
-
-  quaggonMoving = true;
-  //if (arduboy.everyXFrames(8)) quaggonFrame ++;
-
-  //up
-  if (qDir == quaggonDirection::Up) {
-    quaggonFrame = 4;
-    if (arduboy.everyXFrames(8)) quaggonFrame ++;
-    if (quaggonFrame ==7) quaggonFrame = 4;
-   }
-  //down
-  if (qDir == quaggonDirection::Down){
-    quaggonFrame = 0;
-    if (arduboy.everyXFrames(8)) quaggonFrame ++;
-    if (quaggonFrame ==4) quaggonFrame = 0;
-  }
-  //left
-  if (qDir == quaggonDirection::Left){
-    quaggonFrame = 12;
-    if (arduboy.everyXFrames(8)) quaggonFrame ++;
-    if (quaggonFrame ==15) quaggonFrame = 12;
-  }
-  //Right
-  if (qDir == quaggonDirection::Right){
-    quaggonFrame = 8;
-    if (arduboy.everyXFrames(8)) quaggonFrame ++;
-    if (quaggonFrame ==11) quaggonFrame = 8;
-  }
-    
+void resetQuaggonAnimation()
+{
+    quaggonStep = quaggonFirstStep;
 }
 
-void quaggonMove(){
-  if (arduboy.pressed(UP_BUTTON)){
-    WalkingAnim();
-    qDir = quaggonDirection::Up;
+void animateQuaggonWalk()
+{
+    if(quaggonStep < quaggonLastStep)
+        ++quaggonStep;
+    else
+        quaggonStep = quaggonFirstStep;
+}
+
+void quaggonMove()
+{
+  bool moved = false;
+  QuaggonDirection previousDirection = quaggonDirection;
+
+  if (arduboy.pressed(UP_BUTTON))
+  {
+    quaggonDirection = QuaggonDirection::Up;
     
-    if (map_y < PLAYER_Y_OFFSET) {
+    if (map_y < PLAYER_Y_OFFSET)
+    {
       map_y += 1;
     }
+    
+    moved = true;
   }
 
-  if (arduboy.pressed(DOWN_BUTTON)){
-    WalkingAnim();
-    qDir = quaggonDirection::Down;
+  if (arduboy.pressed(DOWN_BUTTON))
+  {
+    quaggonDirection = QuaggonDirection::Down;
     
-    if (PLAYER_Y_OFFSET + PLAYER_SIZE < map_y + TILE_SIZE * WORLD_HEIGHT) {
+    if (PLAYER_Y_OFFSET + PLAYER_SIZE < map_y + TILE_SIZE * WORLD_HEIGHT)
+    {
       map_y -= 1;
     }
+    
+    moved = true;
   }
 
-  if (arduboy.pressed(RIGHT_BUTTON)){
-    WalkingAnim();
-    qDir = quaggonDirection::Right;
+  if (arduboy.pressed(RIGHT_BUTTON))
+  {
+    quaggonDirection = QuaggonDirection::Right;
     
-     if (PLAYER_X_OFFSET + PLAYER_SIZE < map_x + TILE_SIZE * WORLD_WIDTH) {
+    if (PLAYER_X_OFFSET + PLAYER_SIZE < map_x + TILE_SIZE * WORLD_WIDTH)
+    {
       map_x -= 1;
     }
+    
+    moved = true;
   }
 
-  if (arduboy.pressed(LEFT_BUTTON)){
-    WalkingAnim();
-    qDir = quaggonDirection::Left;
+  if (arduboy.pressed(LEFT_BUTTON))
+  {
+    quaggonDirection = QuaggonDirection::Left;
     
-     if (map_x < PLAYER_X_OFFSET) {
+    if (map_x < PLAYER_X_OFFSET)
+    {
       map_x += 1;
     }
+    
+    moved = true;
   }
-
-  //drawing and setting direction
-  if (qDir == quaggonDirection::Up||qDir == quaggonDirection::Down||qDir == quaggonDirection::Left||qDir == quaggonDirection::Right){
-  Sprites::drawPlusMask(PLAYER_X_OFFSET, PLAYER_Y_OFFSET, waddle, quaggonFrame);
+  
+  if(moved)
+  {
+    if(quaggonDirection != previousDirection)
+    {
+      resetQuaggonAnimation();
+    }
+    else
+    {
+      animateQuaggonWalk();
+    }
   }
 }
 
+void drawQuaggon()
+{
+  uint8_t baseFrame = 0;
+
+  if (quaggonDirection == QuaggonDirection::Up)
+  {
+    baseFrame = 4;
+  }
+
+  if (quaggonDirection == QuaggonDirection::Down)
+  {
+    baseFrame = 0;
+  }
+  
+  if (quaggonDirection == QuaggonDirection::Left)
+  {
+    baseFrame = 12;
+  }
+
+  if (quaggonDirection == QuaggonDirection::Right)
+  {
+    baseFrame = 8;
+  }
+
+  Sprites::drawPlusMask(PLAYER_X_OFFSET, PLAYER_Y_OFFSET, waddle, baseFrame + (quaggonStep / 4));
+}
 
 
 /*void quaggonInput(){
   if (arduboy.pressed(UP_BUTTON)){
-    qDir = quaggonDirection::Up;
+    quaggonDirection = QuaggonDirection::Up;
     quaggonMoving = true;
     //quaggonWalking();
     
@@ -112,10 +143,10 @@ void quaggonMove(){
   if (arduboy.pressed(DOWN_BUTTON)){
     quaggonState = quaggonDown;
     quaggonMoving = true;
-    quaggonFrame = 0;
+    quaggonStep = 0;
     
     if (quaggonState == quaggonDown){
-             Sprites::drawPlusMask(30, 30, waddle, quaggonFrame);
+             Sprites::drawPlusMask(30, 30, waddle, quaggonStep);
              //0-3
     }
     map_y -= 1;
@@ -125,7 +156,7 @@ void quaggonMove(){
     quaggonState = quaggonLeft;
     quaggonMoving = true;
     if (quaggonState == quaggonLeft){
-             Sprites::drawPlusMask(30, 30, waddle, quaggonFrame);
+             Sprites::drawPlusMask(30, 30, waddle, quaggonStep);
              //12-15
     }
     map_x += 1;
@@ -135,7 +166,7 @@ void quaggonMove(){
     quaggonState = quaggonRight;
     quaggonMoving = true;
     if (quaggonState == quaggonRight){
-             Sprites::drawPlusMask(30, 30, waddle, quaggonFrame);
+             Sprites::drawPlusMask(30, 30, waddle, quaggonStep);
              //8-11
     }
     map_x -= 1;
@@ -145,7 +176,7 @@ void quaggonMove(){
     quaggonState = quaggonIddle;
     quaggonMoving = false;
     if (quaggonState == quaggonIddle &&(quaggonMoving == false)){
-             Sprites::drawPlusMask(30, 30, waddle, quaggonFrame);
+             Sprites::drawPlusMask(30, 30, waddle, quaggonStep);
              //0
     }
   }
